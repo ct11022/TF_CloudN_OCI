@@ -1,0 +1,13 @@
+aws_access_key = ""
+aws_secret_key = ""
+
+oci_tenancy_id = ""
+oci_user_id = ""
+oci_compartment_id = ""
+oci_api_key_path = ""
+oci_fingerprint = ""
+oci_region = ""
+
+aviatrix_controller_password = ""
+aviatrix_admin_email = ""
+aviatrix_license_id = ""
