@@ -29,6 +29,15 @@ variable "transit_vpc_cidr" {
   description = "for private network, the transit vpc cidr"
   default = ""
 }
+variable "transit_subnet_cidr" {
+  description = "Create in the exsitsor private network, the transit sunbet cidr"
+  default     = ""
+}
+
+variable "transit_ha_subnet_cidr" {
+  description = "Create in the exsits private network, the transit ha subnet cidr"
+  default     = ""
+}
 variable "transit_vpc_availability_domain" {
   description = "for private network,the transit vpc availability domain"
   default = ""

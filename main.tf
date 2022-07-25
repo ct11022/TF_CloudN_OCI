@@ -157,9 +157,9 @@ resource "aviatrix_transit_gateway" "transit" {
   vpc_id                   = (var.transit_vpc_id != "" ? var.transit_vpc_id : aviatrix_vpc.transit[0].vpc_id)
   vpc_reg                  = var.transit_vpc_reg
   gw_size                  = var.transit_gw_size
-  subnet                   = (var.transit_vpc_cidr != "" ? cidrsubnet(var.transit_vpc_cidr, 10, 22) : cidrsubnet(aviatrix_vpc.transit[0].cidr, 10, 16))
+  subnet                   = (var.transit_vpc_cidr != "" ? var.transit_subnet_cidr : cidrsubnet(aviatrix_vpc.transit[0].cidr, 10, 16))
   insane_mode              = true
-  ha_subnet                = (var.transit_vpc_cidr != "" ? cidrsubnet(var.transit_vpc_cidr, 10, 24) : cidrsubnet(aviatrix_vpc.transit[0].cidr, 10, 22))
+  ha_subnet                = (var.transit_vpc_cidr != "" ? var.transit_ha_subnet_cidr : cidrsubnet(aviatrix_vpc.transit[0].cidr, 10, 22))
   ha_gw_size               = var.transit_gw_size
   single_ip_snat           = false
   connected_transit        = true
