@@ -19,6 +19,8 @@ upgrade_target_version = "6.7-patch"
 # if user want to create transit gw at existng VPC, you need to fill & enable following parameters
 transit_vpc_id = "ocid1.vcn.oc1.us-sanjose-1.amaaaaaafiifhzia3jwmeqmo3c4exaocpz5knqbgllje6yp5apel7vez7wca~~ryan-auto-oci-sj1-myWest-AvxTransitVcn-1"
 transit_vpc_cidr = "10.80.0.0/16"
+transit_subnet_cidr = "10.88.9.128/26"
+transit_ha_subnet_cidr = "10.88.9.192/26"
 transit_vpc_availability_domain = "US-SANJOSE-1-AD-1"
 transit_vpc_fault_domain = "FAULT-DOMAIN-1"
 transit_vpc_fault_domain_ha = "FAULT-DOMAIN-3"
