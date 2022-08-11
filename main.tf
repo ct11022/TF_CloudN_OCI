@@ -99,7 +99,7 @@ resource "time_sleep" "wait_210s" {
 
 #Initialize Controller
 module "aviatrix_controller_initialize" {
-  source                        = "git@github.com:AviatrixSystems/terraform-module-oci.git//aviatrix-controller-initialize?ref=master"
+  source                        = "git@github.com:AviatrixSystems/terraform-aviatrix-oci-controller.git//modules/aviatrix-controller-initialize?ref=master"
   avx_controller_public_ip      = local.new_vpc ? module.aviatrix_controller_build_new_vpc[0].public_ip : module.aviatrix_controller_build_existed_vpc[0].public_ip
   avx_controller_private_ip     = local.new_vpc ? module.aviatrix_controller_build_new_vpc[0].private_ip : module.aviatrix_controller_build_existed_vpc[0].private_ip
   avx_controller_admin_email    = var.aviatrix_admin_email
