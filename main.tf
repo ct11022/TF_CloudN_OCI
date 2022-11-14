@@ -185,7 +185,7 @@ resource "aviatrix_vpc" "spoke_vpc" {
   account_name         = var.aviatrix_access_account
   region               = var.spoke_vpc_reg
   name                 = "${var.testbed_name}-spoke"
-  cidr                 = "10.8.0.0/16"
+  cidr                 = var.spoke_cidr
   depends_on           = [
     aviatrix_controller_cert_domain_config.controller_cert_domain
   ]
