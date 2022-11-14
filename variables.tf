@@ -81,6 +81,10 @@ variable "spoke_count" {
   description = "The number of spokes to create."
   default     = 1
 }
+variable "spoke_cidr" {
+  description = "Spoke CIDR."
+  default     = "10.20.0.0/16"
+}
 variable "controller_vpc_id" {
   description = "create controller at existed vpc"
   default = ""
