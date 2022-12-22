@@ -238,17 +238,25 @@ resource "aviatrix_spoke_gateway" "spoke" {
   vpc_reg                           = var.spoke_vpc_reg
   gw_size                           = var.spoke_gw_size
   subnet                            = aviatrix_vpc.spoke_vpc.public_subnets[0].cidr
-  ha_subnet                         = aviatrix_vpc.spoke_vpc.public_subnets[0].cidr
-  ha_gw_size                        = var.spoke_gw_size
-  manage_transit_gateway_attachment = false
+  manage_ha_gateway = false
   availability_domain               = aviatrix_vpc.spoke_vpc.availability_domains[0]
   fault_domain                      = aviatrix_vpc.spoke_vpc.fault_domains[0]
-  ha_availability_domain            = aviatrix_vpc.spoke_vpc.availability_domains[0]
-  ha_fault_domain                   = aviatrix_vpc.spoke_vpc.fault_domains[2]
   depends_on                 = [
     aviatrix_vpc.spoke_vpc,
     time_sleep.wait_20s
   ]
+}
+
+# Create an Aviatrix OCI Spoke HA Gateway
+resource "aviatrix_spoke_ha_gateway" "spoke_ha" {
+  provider            = aviatrix.new_controller
+  count               = 1
+  primary_gw_name     = aviatrix_spoke_gateway.spoke[count.index].id
+  gw_name             = "${var.testbed_name}-Spoke-GW-${count.index}-ha"
+  gw_size             = var.spoke_gw_size
+  subnet              = aviatrix_vpc.spoke_vpc.public_subnets[0].cidr
+  availability_domain = aviatrix_vpc.spoke_vpc.availability_domains[0]
+  fault_domain        = aviatrix_vpc.spoke_vpc.fault_domains[2]
 }
 
 # Create Spoke-Transit Attachment
@@ -257,6 +265,9 @@ resource "aviatrix_spoke_transit_attachment" "spoke" {
   count           = 1
   spoke_gw_name   = aviatrix_spoke_gateway.spoke[count.index].gw_name
   transit_gw_name = aviatrix_transit_gateway.transit.gw_name
+  depends_on = [
+    aviatrix_spoke_ha_gateway.spoke_ha
+  ]
 }
 
 #Follwing block is use for create the route table in transit in OCI, it makes the traffic routing from Spoke to CloudN.
