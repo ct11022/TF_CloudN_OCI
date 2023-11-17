@@ -27,7 +27,7 @@ Provide testbed info such as controller password, license etc as necessary in te
  testbed_name = ""  
  aws_region     = "The region you want to controller and spoke deploy"  
  keypair_name = "Use exsiting screct key in AWS for SSH login controller"  
- ssh_public_key = "Adding exsiting public key to spoke end vm"
+ public_key_path = "Adding exsiting public key to spoke end vm"
  controller_vpc_id = "Deploy the controller on existing VPC"  
  controller_subnet_id = "The subnet ID belongs to above VPC"  
  controller_vpc_cidr  = "VPC CIDR"  

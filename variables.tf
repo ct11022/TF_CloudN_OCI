@@ -12,10 +12,12 @@ variable "oci_region" {}
 variable "aviatrix_controller_username" { default = "admin" }
 variable "aviatrix_controller_password" { default = "Aviatrix123#" }
 variable "aviatrix_admin_email" { default = "jchang@aviatrix.com" }
-variable "aviatrix_controller_ami" { default = "" }
-variable "aviatrix_access_account" { default = "OCI" }
+variable "aviatrix_controller_ami_id" { default = "" }
+variable "aviatrix_access_account" { default = "oci1" }
 variable "aviatrix_license_id" {}
 variable "upgrade_target_version" { default = "6.7-patch" }
+
+variable "release_infra" { default = "staging" }
 
 variable "transit_vpc_id" {
   description = "for private network, the transit vpc id"
@@ -101,11 +103,11 @@ variable "keypair_name" {
   description = "use the key saved on aws"
   default = ""
 }
-variable "ssh_public_key" {
+variable "public_key_path" {
   description = ""
   default = ""
 }
-variable "incoming_ssl_cidr" {
+variable "incoming_ssl_cidrs" {
   type        = list(string)
   description = "The CIDR to be allowed for HTTPS(port 443) access to the controller. Type is \"list\"."
   default = [ "0.0.0.0/0" ]
