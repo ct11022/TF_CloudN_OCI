@@ -1,9 +1,9 @@
 output "controller_private_ip" {
-  value = local.new_vpc ? module.aviatrix_controller_build_new_vpc[0].private_ip : module.aviatrix_controller_build_existed_vpc[0].private_ip
+  value = local.controller_pri_ip
 }
 
 output "controller_public_ip" {
-  value = local.new_vpc ? module.aviatrix_controller_build_new_vpc[0].public_ip : module.aviatrix_controller_build_existed_vpc[0].public_ip
+  value = local.controller_pub_ip
 }
 
 output "transit_gw" {
