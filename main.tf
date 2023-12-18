@@ -213,7 +213,7 @@ resource "aviatrix_spoke_ha_gateway" "spoke_ha" {
   provider            = aviatrix.new_controller
   count               = 1
   primary_gw_name     = aviatrix_spoke_gateway.spoke[count.index].id
-  gw_name             = "${var.testbed_name}-Spoke-GW-${count.index}-ha"
+  gw_name             = "${var.testbed_name}-Spoke-GW-${count.index}-${var.spoke_ha_postfix_name}"
   gw_size             = var.spoke_gw_size
   subnet              = aviatrix_vpc.spoke_vpc.public_subnets[0].cidr
   availability_domain = aviatrix_vpc.spoke_vpc.availability_domains[0]
