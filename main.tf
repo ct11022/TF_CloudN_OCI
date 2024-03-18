@@ -33,47 +33,35 @@ resource "aws_key_pair" "controller" {
   public_key = tls_private_key.terraform_key[0].public_key_openssh
 }
 
-#Buile Aviatrix controller
 module "aviatrix_controller_build" {
-  source               = "git@github.com:AviatrixDev/terraform-aviatrix-aws-controller.git//modules/aviatrix-controller-build?ref=main"
-  use_existing_vpc     = (var.controller_vpc_id != "" ? true : false)
-  vpc_id               = var.controller_vpc_id
-  subnet_id            = var.controller_subnet_id
-  use_existing_keypair = true
-  key_pair_name        = (local.new_key ? aws_key_pair.controller[0].key_name : var.keypair_name)
-  ec2_role_name        = "aviatrix-role-ec2"
-  name_prefix          = var.testbed_name
-  allow_upgrade_jump   = true
-  enable_ssh           = true
-  release_infra        = var.release_infra
-  ami_id               = var.aviatrix_controller_ami_id
-  incoming_ssl_cidrs   = ["0.0.0.0/0"]
+  source                 = "git@github.com:AviatrixDev/terraform-aviatrix-aws-controller.git"
+  create_iam_roles       = false
+  use_existing_vpc       = (var.controller_vpc_id != "" ? true : false)
+  vpc_id                 = var.controller_vpc_id
+  subnet_id              = var.controller_subnet_id
+  use_existing_keypair   = (local.new_key ? false : true)
+  key_pair_name          = (local.new_key ? aws_key_pair.controller[0].key_name : var.keypair_name)
+  ec2_role_name          = "aviatrix-role-ec2"
+  controller_name_prefix = var.testbed_name
+  allow_upgrade_jump     = true
+  enable_ssh             = true
+  release_infra          = var.release_infra
+  ami_id                 = var.aviatrix_controller_ami_id
+  incoming_ssl_cidrs     = ["0.0.0.0/0"]
+  aws_account_id         = data.aws_caller_identity.current.account_id
+  admin_email            = var.aviatrix_admin_email
+  admin_password         = var.aviatrix_controller_password
+  access_account_email   = var.aviatrix_admin_email
+  access_account_name    = var.aviatrix_aws_access_account
+  customer_license_id    = var.aviatrix_license_id
+  controller_version     = var.upgrade_target_version
+
 }
 
 locals {
   controller_pub_ip           = module.aviatrix_controller_build.public_ip
   controller_pri_ip           = module.aviatrix_controller_build.private_ip
   iptable_ssl_cidr_jsonencode = jsonencode([for i in var.incoming_ssl_cidrs : { "addr" = i, "desc" = "" }])
-}
-
-#Initialize Controller
-module "aviatrix_controller_initialize" {
-  source                        = "git@github.com:AviatrixSystems/terraform-aviatrix-oci-controller.git//modules/aviatrix-controller-initialize?ref=master"
-  avx_controller_public_ip      = local.controller_pub_ip
-  avx_controller_private_ip     = local.controller_pri_ip
-  avx_controller_admin_email    = var.aviatrix_admin_email
-  avx_controller_admin_password = var.aviatrix_controller_password
-  oci_tenancy_id                = var.oci_tenancy_id
-  oci_user_id                   = var.oci_user_id
-  oci_compartment_id            = var.oci_compartment_id
-  oci_api_key_path              = var.oci_api_key_path
-  account_email                 = var.aviatrix_admin_email
-  access_account_name           = var.aviatrix_access_account
-  aviatrix_customer_id          = var.aviatrix_license_id
-  controller_version            = var.upgrade_target_version
-  depends_on = [
-    module.aviatrix_controller_build
-  ]
 }
 
 resource "aws_security_group_rule" "ingress_rule_ssh" {
@@ -83,7 +71,7 @@ resource "aws_security_group_rule" "ingress_rule_ssh" {
   protocol          = "tcp"
   cidr_blocks       = var.incoming_ssl_cidrs
   security_group_id = module.aviatrix_controller_build.security_group_id
-  depends_on        = [module.aviatrix_controller_initialize]
+  depends_on        = [module.aviatrix_controller_build]
 }
 
 # resource "null_resource" "call_api_set_allow_list" {
@@ -98,10 +86,22 @@ resource "aws_security_group_rule" "ingress_rule_ssh" {
 #   ]
 # }
 
+# Create an Aviatrix Oracle OCI Account
+resource "aviatrix_account" "acc_oci" {
+  provider                     = aviatrix.new_controller
+  account_name                 = var.aviatrix_oci_access_account
+  cloud_type                   = 16
+  oci_tenancy_id               = var.oci_tenancy_id
+  oci_user_id                  = var.oci_user_id
+  oci_compartment_id           = var.oci_compartment_id
+  oci_api_private_key_filepath = var.oci_api_key_path
+  depends_on                   = [module.aviatrix_controller_build]
+}
+
 resource "aviatrix_controller_cert_domain_config" "controller_cert_domain" {
   provider    = aviatrix.new_controller
   cert_domain = var.cert_domain
-  depends_on  = [module.aviatrix_controller_initialize]
+  depends_on  = [module.aviatrix_controller_build]
 }
 
 # Create OCI Transit VPC
@@ -109,11 +109,12 @@ resource "aviatrix_vpc" "transit" {
   provider     = aviatrix.new_controller
   count        = (var.transit_vpc_id != "" ? 0 : 1)
   cloud_type   = 16
-  account_name = var.aviatrix_access_account
+  account_name = var.aviatrix_oci_access_account
   region       = var.transit_vpc_reg
   name         = "${var.testbed_name}-Tr-VPC"
   cidr         = "192.168.0.0/16"
   depends_on = [
+    aviatrix_account.acc_oci,
     aviatrix_controller_cert_domain_config.controller_cert_domain
   ]
 }
@@ -129,7 +130,7 @@ resource "time_sleep" "wait_60s" {
 resource "aviatrix_transit_gateway" "transit" {
   provider               = aviatrix.new_controller
   cloud_type             = 16
-  account_name           = var.aviatrix_access_account
+  account_name           = var.aviatrix_oci_access_account
   gw_name                = "${var.testbed_name}-Transit-GW"
   vpc_id                 = (var.transit_vpc_id != "" ? var.transit_vpc_id : aviatrix_vpc.transit[0].vpc_id)
   vpc_reg                = var.transit_vpc_reg
@@ -145,7 +146,8 @@ resource "aviatrix_transit_gateway" "transit" {
   ha_availability_domain = (var.transit_vpc_availability_domain != "" ? var.transit_vpc_availability_domain : aviatrix_vpc.transit[0].availability_domains[0])
   ha_fault_domain        = (var.transit_vpc_fault_domain_ha != "" ? var.transit_vpc_fault_domain_ha : aviatrix_vpc.transit[0].fault_domains[1])
   depends_on = [
-    time_sleep.wait_60s
+    time_sleep.wait_60s,
+    aviatrix_account.acc_oci
   ]
   lifecycle {
     ignore_changes = [
@@ -159,12 +161,13 @@ resource "aviatrix_transit_gateway" "transit" {
 resource "aviatrix_vpc" "spoke_vpc" {
   provider     = aviatrix.new_controller
   cloud_type   = 16
-  account_name = var.aviatrix_access_account
+  account_name = var.aviatrix_oci_access_account
   region       = var.spoke_vpc_reg
   name         = "${var.testbed_name}-spoke"
   cidr         = var.spoke_cidr
   depends_on = [
-    aviatrix_controller_cert_domain_config.controller_cert_domain
+    time_sleep.wait_60s,
+    aviatrix_account.acc_oci
   ]
 }
 
@@ -182,18 +185,12 @@ module "ubuntu-oci" {
   region              = var.oci_region
 }
 
-resource "time_sleep" "wait_20s" {
-  create_duration = "20s"
-  depends_on = [
-    aviatrix_transit_gateway.transit
-  ]
-}
 #Create an Aviatrix Spoke Gateway-1
 resource "aviatrix_spoke_gateway" "spoke" {
   provider            = aviatrix.new_controller
   count               = 1
   cloud_type          = 16
-  account_name        = var.aviatrix_access_account
+  account_name        = var.aviatrix_oci_access_account
   gw_name             = "${var.testbed_name}-Spoke-GW-${count.index}"
   vpc_id              = aviatrix_vpc.spoke_vpc.vpc_id
   vpc_reg             = var.spoke_vpc_reg
@@ -203,8 +200,7 @@ resource "aviatrix_spoke_gateway" "spoke" {
   availability_domain = aviatrix_vpc.spoke_vpc.availability_domains[0]
   fault_domain        = aviatrix_vpc.spoke_vpc.fault_domains[0]
   depends_on = [
-    aviatrix_vpc.spoke_vpc,
-    time_sleep.wait_20s
+    aviatrix_account.acc_oci
   ]
 }
 
