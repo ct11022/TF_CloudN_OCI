@@ -13,11 +13,12 @@ variable "aviatrix_controller_username" { default = "admin" }
 variable "aviatrix_controller_password" { default = "Aviatrix123#" }
 variable "aviatrix_admin_email" { default = "jchang@aviatrix.com" }
 variable "aviatrix_controller_ami_id" { default = "" }
-variable "aviatrix_access_account" { default = "oci1" }
+variable "aviatrix_oci_access_account" { default = "oci1" }
+variable "aviatrix_aws_access_account" { default = "aws1" }
 variable "aviatrix_license_id" {}
 variable "upgrade_target_version" { default = "6.7-patch" }
-
 variable "release_infra" { default = "staging" }
+variable "controller_type_of_billing" { default = "G3" }
 
 variable "transit_vpc_id" {
   description = "for private network, the transit vpc id"
