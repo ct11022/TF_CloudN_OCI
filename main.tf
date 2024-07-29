@@ -3,9 +3,15 @@
 
 data "aws_caller_identity" "current" {}
 
+data "http" "icanhazip" {
+  url = "http://icanhazip.com"
+}
+
 locals {
   # Proper boolean usage
-  new_key = (var.keypair_name == "" ? true : false)
+  new_key                     = (var.keypair_name == "" ? true : false)
+  new_incoming_ssl_cidrs      = concat(var.incoming_ssl_cidrs, ["${chomp(data.http.icanhazip.response_body)}/32"])
+  iptable_ssl_cidr_jsonencode = jsonencode([for i in local.new_incoming_ssl_cidrs : { "addr" = i, "desc" = "" }])
 }
 
 # Public-Private key generation
@@ -34,6 +40,7 @@ resource "aws_key_pair" "controller" {
 }
 
 module "aviatrix_controller_build" {
+
   source                 = "git@github.com:AviatrixDev/terraform-aviatrix-aws-controller.git"
   create_iam_roles       = false
   use_existing_vpc       = (var.controller_vpc_id != "" ? true : false)
@@ -55,13 +62,13 @@ module "aviatrix_controller_build" {
   access_account_name    = var.aviatrix_aws_access_account
   customer_license_id    = var.aviatrix_license_id
   controller_version     = var.upgrade_target_version
+  type                   = var.controller_type_of_billing
 
 }
 
 locals {
-  controller_pub_ip           = module.aviatrix_controller_build.public_ip
-  controller_pri_ip           = module.aviatrix_controller_build.private_ip
-  iptable_ssl_cidr_jsonencode = jsonencode([for i in var.incoming_ssl_cidrs : { "addr" = i, "desc" = "" }])
+  controller_pub_ip = module.aviatrix_controller_build.public_ip
+  controller_pri_ip = module.aviatrix_controller_build.private_ip
 }
 
 resource "aws_security_group_rule" "ingress_rule_ssh" {
@@ -69,7 +76,7 @@ resource "aws_security_group_rule" "ingress_rule_ssh" {
   from_port         = 22
   to_port           = 22
   protocol          = "tcp"
-  cidr_blocks       = var.incoming_ssl_cidrs
+  cidr_blocks       = local.new_incoming_ssl_cidrs
   security_group_id = module.aviatrix_controller_build.security_group_id
   depends_on        = [module.aviatrix_controller_build]
 }
